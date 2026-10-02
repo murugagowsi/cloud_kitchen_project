@@ -1,0 +1,23 @@
+$kind: http-request
+name: http://127.0.0.1:8000/api/users/login/
+description: ""
+url: http://127.0.0.1:8000/api/deliveries/
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: "{\r
+
+    \  \"order_id\": 1,\r
+
+    \  \"delivery_person\": \"Ravi Kumar\",\r
+
+    \  \"delivery_location\": \"123 Main Street, Thanjavur\",\r
+
+    \  \"status\": \"pending\"\r
+
+    }"
+auth:
+  type: noauth
+order: 1789276216639
