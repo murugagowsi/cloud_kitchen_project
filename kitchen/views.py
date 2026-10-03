@@ -1,5 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
@@ -11,6 +13,12 @@ from .serializers import KitchenOrderSerializer, UserSerializer, MenuSerializer
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_permissions(self):
+        # Anyone can register or log in; everything else is admin only
+        if self.action in ['register', 'login']:
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     @action(detail=False, methods=['post'])
     def register(self, request):
@@ -31,12 +39,12 @@ class UserViewSet(viewsets.ModelViewSet):
     def login(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
-        
+
         user = authenticate(username=username, password=password)
-        
+
         if user is not None:
             token = hashlib.sha256(f"{user.id}{user.username}".encode()).hexdigest()
-            
+
             return Response({
                 'message': 'Login successful',
                 'token': token,
@@ -52,8 +60,27 @@ class UserViewSet(viewsets.ModelViewSet):
 class KitchenOrderViewSet(viewsets.ModelViewSet):
     queryset = KitchenOrder.objects.all()
     serializer_class = KitchenOrderSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class MenuViewSet(viewsets.ModelViewSet):
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
+
+    def get_permissions(self):
+        # Anyone can view the menu; only admins can change it
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAdminUser()]
+
+    def _check_price(self, serializer):
+        price = serializer.validated_data.get('price')
+        if price is not None and price <= 0:
+            raise ValidationError({'price': 'Price must be greater than 0.'})
+
+    def perform_create(self, serializer):
+        self._check_price(serializer)
+        serializer.save()
+    def perform_update(self, serializer):
+        self._check_price(serializer)
+        serializer.save()
