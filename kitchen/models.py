@@ -9,14 +9,16 @@ class KitchenOrder(models.Model):
         ('ready', 'Ready'),
     ]
     
-    order = models.OneToOneField('kitchen.KitchenOrder', on_delete=models.CASCADE, null=True, blank=True)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     started_at = models.DateTimeField(blank=True, null=True)
     completed_at = models.DateTimeField(blank=True, null=True)
     special_instructions = models.TextField(blank=True)
     
     def __str__(self):
-        return f"Kitchen Order {self.order.order_number}"
+        if self.order and hasattr(self.order, 'order_number'):
+            return f"Kitchen Order for #{self.order.order_number}"
+        return f"Kitchen Order #{self.pk or 'New'}"
 
 
 class Menu(models.Model):
